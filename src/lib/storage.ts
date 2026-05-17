@@ -49,8 +49,12 @@ export interface Profile {
   email: string;
 }
 
+export type NoteStatus = "draft" | "sent" | "downloaded";
+
 export interface TaxiNote {
   id: string;
+  groupId?: string;
+  status?: NoteStatus;
   date: string;
   departTime?: string;
   arriveTime?: string;
