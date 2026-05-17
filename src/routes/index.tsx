@@ -98,6 +98,7 @@ function NewNote() {
   const [saved, setSaved] = useState(false);
 
   const profile = useMemo(() => getProfile(), []);
+  const groupIdRef = useRef<string>(crypto.randomUUID());
 
   const update = (id: string, patch: Partial<Trip>) =>
     setTrips((arr) => arr.map((t) => (t.id === id ? { ...t, ...patch } : t)));
@@ -109,12 +110,30 @@ function NewNote() {
   const step2Valid =
     isPurposeValid(trips[0]) && trips.slice(1).every((t) => isTripFullyValid(t));
 
-  const submit = () => {
-    if (!step1Valid || !step2Valid) return;
+  const previewTrips: PreviewTrip[] = trips.map((t) => ({
+    id: t.id,
+    date: t.date,
+    departTime: t.departTime,
+    arriveTime: t.arriveTime,
+    from: t.from,
+    to: t.to,
+    amount: parseAmount(t.amount),
+    payment: t.payment,
+    purpose: t.purpose || "",
+    counterparty: t.counterparty,
+    isBusinessTrip: t.isBusinessTrip,
+    bizStart: t.bizStart,
+    bizEnd: t.bizEnd,
+  }));
+
+  const persistTrips = (status: "draft" | "sent" | "downloaded") => {
     const createdAt = new Date().toISOString();
+    const groupId = groupIdRef.current;
     trips.forEach((t) => {
       saveNote({
         id: crypto.randomUUID(),
+        groupId,
+        status,
         date: t.date,
         departTime: t.departTime || undefined,
         arriveTime: t.arriveTime || undefined,
@@ -131,9 +150,18 @@ function NewNote() {
         createdAt,
       });
     });
-    setSaved(true);
-    setTimeout(() => navigate({ to: "/history" }), 500);
   };
+
+  const submit = () => {
+    if (!step1Valid || !step2Valid) return;
+    persistTrips("draft");
+    setSaved(true);
+    setTimeout(() => navigate({ to: "/history" }), 1100);
+  };
+
+  if (saved) {
+    return <SuccessSplash />;
+  }
 
   return (
     <div>
@@ -156,36 +184,59 @@ function NewNote() {
             </StepCard>
 
             {trips.slice(1).map((t, i) => (
-              <StepCard
-                key={t.id}
-                title={`Поездка ${i + 2}`}
-                onRemove={() => removeTrip(t.id)}
-              >
-                <RouteFields trip={t} update={(p) => update(t.id, p)} />
-                <div className="my-2 h-px bg-border/60" />
-                <PurposeFields trip={t} update={(p) => update(t.id, p)} />
-              </StepCard>
+              <div key={t.id} className="animate-fade-up">
+                <StepCard
+                  title={`Поездка ${i + 2}`}
+                  onRemove={() => removeTrip(t.id)}
+                >
+                  <RouteFields trip={t} update={(p) => update(t.id, p)} />
+                  <div className="my-2 h-px bg-border/60" />
+                  <PurposeFields trip={t} update={(p) => update(t.id, p)} />
+                </StepCard>
+              </div>
             ))}
 
-            <button
-              type="button"
-              onClick={addTrip}
-              className="flex h-[56px] w-full items-center justify-center gap-2 rounded-2xl border border-dashed bg-card text-[15px] font-medium transition active:scale-[0.995]"
-              style={{ color: "var(--color-primary)", borderColor: "color-mix(in oklch, var(--color-primary) 50%, transparent)" }}
+            <div
+              className="sticky z-20"
+              style={{ bottom: "calc(env(safe-area-inset-bottom) + 80px)" }}
             >
-              <Plus size={18} strokeWidth={2} />
-              Добавить поездку
-            </button>
+              <button
+                type="button"
+                onClick={addTrip}
+                className="flex h-[56px] w-full items-center justify-center gap-2 rounded-2xl border border-dashed text-[15px] font-medium backdrop-blur-xl transition active:scale-[0.995]"
+                style={{
+                  color: "var(--color-primary)",
+                  borderColor:
+                    "color-mix(in oklch, var(--color-primary) 50%, transparent)",
+                  backgroundColor:
+                    "color-mix(in oklch, var(--color-card) 85%, transparent)",
+                }}
+              >
+                <Plus size={18} strokeWidth={2} />
+                Добавить поездку
+              </button>
+            </div>
           </>
         )}
 
         {step === 3 && (
-          <DocumentPreview trips={trips} profile={profile} />
+          <DocumentPreview trips={previewTrips} profile={profile} />
         )}
       </div>
 
       {step === 3 && (
-        <PdfActions trips={trips} profile={profile} />
+        <PdfActions
+          trips={trips}
+          profile={profile}
+          onSent={() => {
+            persistTrips("sent");
+            setSaved(true);
+            setTimeout(() => navigate({ to: "/history" }), 1100);
+          }}
+          onDownloaded={() => {
+            persistTrips("downloaded");
+          }}
+        />
       )}
 
       <div className="mt-8 flex gap-3">
@@ -193,7 +244,7 @@ function NewNote() {
           <button
             type="button"
             onClick={() => setStep((s) => (s === 3 ? 2 : 1))}
-            className="h-[56px] flex-1 rounded-xl border border-border bg-card text-[16px] font-medium text-foreground transition active:scale-[0.99]"
+            className="min-h-[52px] h-[56px] flex-1 rounded-xl border border-border bg-card text-[16px] font-medium text-foreground transition active:scale-[0.99]"
           >
             Назад
           </button>
@@ -203,7 +254,7 @@ function NewNote() {
             type="button"
             disabled={step === 1 ? !step1Valid : !step2Valid}
             onClick={() => setStep((s) => ((s + 1) as 1 | 2 | 3))}
-            className="h-[56px] flex-1 rounded-xl text-[16px] font-medium text-primary-foreground transition active:scale-[0.99] disabled:opacity-40"
+            className="min-h-[52px] h-[56px] flex-1 rounded-xl text-[16px] font-medium text-primary-foreground transition active:scale-[0.99] disabled:opacity-40"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
             Далее
@@ -214,13 +265,38 @@ function NewNote() {
             type="button"
             disabled={saved || !step1Valid || !step2Valid}
             onClick={submit}
-            className="h-[56px] flex-1 rounded-xl text-[16px] font-medium text-primary-foreground transition active:scale-[0.99] disabled:opacity-60"
+            className="min-h-[52px] h-[56px] flex-1 rounded-xl text-[16px] font-medium text-primary-foreground transition active:scale-[0.99] disabled:opacity-60"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
-            {saved ? "Сохранено" : "Сохранить записку"}
+            Сохранить записку
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+function SuccessSplash() {
+  return (
+    <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+      <div
+        className="success-check-circle flex h-24 w-24 items-center justify-center rounded-full"
+        style={{ backgroundColor: "#10b981" }}
+      >
+        <svg viewBox="0 0 52 52" className="h-14 w-14">
+          <path
+            className="success-check-path"
+            fill="none"
+            stroke="white"
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M14 27 L23 36 L40 18"
+          />
+        </svg>
+      </div>
+      <h2 className="mt-6 text-[24px] font-medium tracking-tight">Записка сохранена</h2>
+      <p className="mt-1.5 text-[15px] text-muted-foreground">Открываем историю…</p>
     </div>
   );
 }
