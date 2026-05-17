@@ -1,7 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { Plus, X } from "lucide-react";
 import { AppGate } from "@/components/AppGate";
-import { saveNote, TRIP_PURPOSES, type PaymentMethod, type TripPurpose } from "@/lib/storage";
+import {
+  getProfile,
+  saveNote,
+  TRIP_PURPOSES,
+  type PaymentMethod,
+  type Profile,
+  type TripPurpose,
+} from "@/lib/storage";
 import { numberToRubles } from "@/lib/numberToWords";
 
 export const Route = createFileRoute("/")({
@@ -25,65 +33,98 @@ function IndexPage() {
 const field =
   "w-full rounded-xl border border-border bg-card px-4 text-[15px] outline-none transition focus:border-foreground/30 focus:ring-2 focus:ring-foreground/5";
 
+interface Trip {
+  id: string;
+  date: string;
+  departTime: string;
+  arriveTime: string;
+  from: string;
+  to: string;
+  amount: string;
+  payment: PaymentMethod;
+  purpose: TripPurpose | "";
+  counterparty: string;
+  isBusinessTrip: boolean;
+  bizStart: string;
+  bizEnd: string;
+}
+
+const makeTrip = (date: string): Trip => ({
+  id: crypto.randomUUID(),
+  date,
+  departTime: "",
+  arriveTime: "",
+  from: "",
+  to: "",
+  amount: "",
+  payment: "card",
+  purpose: "",
+  counterparty: "",
+  isBusinessTrip: false,
+  bizStart: "",
+  bizEnd: "",
+});
+
+const parseAmount = (s: string) => {
+  const n = Number(s.replace(/\s/g, "").replace(",", "."));
+  return isFinite(n) && n > 0 ? n : 0;
+};
+
+const needsCp = (p: Trip["purpose"]) =>
+  p === "Встреча с клиентом" || p === "Поездка к контрагенту";
+
+const isRouteValid = (t: Trip) =>
+  !!t.date && !!t.from.trim() && !!t.to.trim() && parseAmount(t.amount) > 0;
+
+const isPurposeValid = (t: Trip) =>
+  !!t.purpose &&
+  (!needsCp(t.purpose) || t.counterparty.trim().length > 0) &&
+  (!t.isBusinessTrip || (!!t.bizStart && !!t.bizEnd));
+
+const isTripFullyValid = (t: Trip) => isRouteValid(t) && isPurposeValid(t);
+
 function NewNote() {
   const navigate = useNavigate();
   const today = new Date().toISOString().slice(0, 10);
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
-
-  // Step 1
-  const [date, setDate] = useState(today);
-  const [departTime, setDepartTime] = useState("");
-  const [arriveTime, setArriveTime] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [amount, setAmount] = useState("");
-  const [payment, setPayment] = useState<PaymentMethod>("card");
-
-  // Step 2
-  const [purpose, setPurpose] = useState<TripPurpose | "">("");
-  const [counterparty, setCounterparty] = useState("");
-  const [isBusinessTrip, setIsBusinessTrip] = useState(false);
-  const [bizStart, setBizStart] = useState("");
-  const [bizEnd, setBizEnd] = useState("");
-
-  // Step 3
+  const [trips, setTrips] = useState<Trip[]>([makeTrip(today)]);
   const [comment, setComment] = useState("");
   const [saved, setSaved] = useState(false);
 
-  const amountNum = useMemo(() => {
-    const n = Number(amount.replace(/\s/g, "").replace(",", "."));
-    return isFinite(n) && n > 0 ? n : 0;
-  }, [amount]);
+  const profile = useMemo(() => getProfile(), []);
 
-  const amountWords = useMemo(() => (amountNum > 0 ? numberToRubles(amountNum) : ""), [amountNum]);
+  const update = (id: string, patch: Partial<Trip>) =>
+    setTrips((arr) => arr.map((t) => (t.id === id ? { ...t, ...patch } : t)));
 
-  const needsCounterparty = purpose === "Встреча с клиентом" || purpose === "Поездка к контрагенту";
+  const addTrip = () => setTrips((arr) => [...arr, makeTrip(today)]);
+  const removeTrip = (id: string) => setTrips((arr) => arr.filter((t) => t.id !== id));
 
-  const step1Valid = !!date && !!from.trim() && !!to.trim() && amountNum > 0;
+  const step1Valid = isRouteValid(trips[0]);
   const step2Valid =
-    !!purpose &&
-    (!needsCounterparty || counterparty.trim().length > 0) &&
-    (!isBusinessTrip || (!!bizStart && !!bizEnd));
+    isPurposeValid(trips[0]) && trips.slice(1).every((t) => isTripFullyValid(t));
 
   const submit = () => {
     if (!step1Valid || !step2Valid) return;
-    saveNote({
-      id: crypto.randomUUID(),
-      date,
-      departTime: departTime || undefined,
-      arriveTime: arriveTime || undefined,
-      from: from.trim(),
-      to: to.trim(),
-      purpose: purpose as string,
-      amount: amountNum,
-      paymentMethod: payment,
-      counterparty: needsCounterparty ? counterparty.trim() : undefined,
-      isBusinessTrip,
-      businessTripStart: isBusinessTrip ? bizStart : undefined,
-      businessTripEnd: isBusinessTrip ? bizEnd : undefined,
-      comment: comment.trim() || undefined,
-      createdAt: new Date().toISOString(),
+    const createdAt = new Date().toISOString();
+    trips.forEach((t) => {
+      saveNote({
+        id: crypto.randomUUID(),
+        date: t.date,
+        departTime: t.departTime || undefined,
+        arriveTime: t.arriveTime || undefined,
+        from: t.from.trim(),
+        to: t.to.trim(),
+        purpose: t.purpose as string,
+        amount: parseAmount(t.amount),
+        paymentMethod: t.payment,
+        counterparty: needsCp(t.purpose) ? t.counterparty.trim() : undefined,
+        isBusinessTrip: t.isBusinessTrip,
+        businessTripStart: t.isBusinessTrip ? t.bizStart : undefined,
+        businessTripEnd: t.isBusinessTrip ? t.bizEnd : undefined,
+        comment: comment.trim() || undefined,
+        createdAt,
+      });
     });
     setSaved(true);
     setTimeout(() => navigate({ to: "/history" }), 500);
@@ -92,130 +133,49 @@ function NewNote() {
   return (
     <div>
       <h1 className="text-[34px] font-medium leading-tight tracking-tight">Новая записка</h1>
-      <p className="mt-1.5 text-[15px] text-muted-foreground">
-        Заполните три коротких шага.
-      </p>
+      <p className="mt-1.5 text-[15px] text-muted-foreground">Заполните три коротких шага.</p>
 
       <ProgressDots step={step} />
 
-      <div className="mt-6">
+      <div className="mt-6 space-y-4">
         {step === 1 && (
           <StepCard title="Шаг 1 · Данные поездки">
-            <Row label="Дата поездки">
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={`${field} h-[52px]`} />
-            </Row>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Row label="Время отправления">
-                <input type="time" value={departTime} onChange={(e) => setDepartTime(e.target.value)} className={`${field} h-[52px]`} />
-              </Row>
-              <Row label="Время прибытия">
-                <input type="time" value={arriveTime} onChange={(e) => setArriveTime(e.target.value)} className={`${field} h-[52px]`} />
-              </Row>
-            </div>
-            <Row label="Откуда">
-              <input value={from} onChange={(e) => setFrom(e.target.value)} placeholder="Адрес отправления" className={`${field} h-[52px]`} />
-            </Row>
-            <Row label="Куда">
-              <input value={to} onChange={(e) => setTo(e.target.value)} placeholder="Адрес назначения" className={`${field} h-[52px]`} />
-            </Row>
-            <Row label="Сумма расходов, ₽">
-              <input
-                inputMode="decimal"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0"
-                className={`${field} h-[52px]`}
-              />
-              <p className="mt-2 min-h-[18px] text-[13px] italic text-muted-foreground">
-                {amountWords}
-              </p>
-            </Row>
-            <Row label="Способ оплаты">
-              <div className="flex gap-2">
-                <PaymentPill active={payment === "card"} onClick={() => setPayment("card")}>
-                  💳 Банковская карта
-                </PaymentPill>
-                <PaymentPill active={payment === "cash"} onClick={() => setPayment("cash")}>
-                  💵 Наличные
-                </PaymentPill>
-              </div>
-            </Row>
+            <RouteFields trip={trips[0]} update={(p) => update(trips[0].id, p)} />
           </StepCard>
         )}
 
         {step === 2 && (
-          <StepCard title="Шаг 2 · Цель поездки">
-            <Row label="Цель поездки">
-              <select
-                value={purpose}
-                onChange={(e) => setPurpose(e.target.value as TripPurpose)}
-                className={`${field} h-[52px] bg-card`}
+          <>
+            <StepCard title="Шаг 2 · Цель поездки">
+              <PurposeFields trip={trips[0]} update={(p) => update(trips[0].id, p)} />
+            </StepCard>
+
+            {trips.slice(1).map((t, i) => (
+              <StepCard
+                key={t.id}
+                title={`Поездка ${i + 2}`}
+                onRemove={() => removeTrip(t.id)}
               >
-                <option value="">Выберите цель…</option>
-                {TRIP_PURPOSES.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </Row>
+                <RouteFields trip={t} update={(p) => update(t.id, p)} />
+                <div className="my-2 h-px bg-border/60" />
+                <PurposeFields trip={t} update={(p) => update(t.id, p)} />
+              </StepCard>
+            ))}
 
-            {needsCounterparty && (
-              <Row label="Компания и ФИО представителя">
-                <input
-                  value={counterparty}
-                  onChange={(e) => setCounterparty(e.target.value)}
-                  placeholder="ООО «Пример» — Иванов И. И."
-                  className={`${field} h-[52px]`}
-                />
-              </Row>
-            )}
-
-            <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3.5">
-              <div>
-                <p className="text-[15px] font-medium">Командировка / Служебная поездка</p>
-                <p className="text-[12px] text-muted-foreground">Укажите даты командировки</p>
-              </div>
-              <Toggle checked={isBusinessTrip} onChange={setIsBusinessTrip} />
-            </div>
-
-            {isBusinessTrip && (
-              <div className="grid gap-5 sm:grid-cols-2">
-                <Row label="Дата начала">
-                  <input type="date" value={bizStart} onChange={(e) => setBizStart(e.target.value)} className={`${field} h-[52px]`} />
-                </Row>
-                <Row label="Дата окончания">
-                  <input type="date" value={bizEnd} onChange={(e) => setBizEnd(e.target.value)} className={`${field} h-[52px]`} />
-                </Row>
-              </div>
-            )}
-          </StepCard>
+            <button
+              type="button"
+              onClick={addTrip}
+              className="flex h-[56px] w-full items-center justify-center gap-2 rounded-2xl border border-dashed bg-card text-[15px] font-medium transition active:scale-[0.995]"
+              style={{ color: "var(--color-primary)", borderColor: "color-mix(in oklch, var(--color-primary) 50%, transparent)" }}
+            >
+              <Plus size={18} strokeWidth={2} />
+              Добавить поездку
+            </button>
+          </>
         )}
 
         {step === 3 && (
-          <StepCard title="Шаг 3 · Подтверждение">
-            <SummaryRow k="Дата" v={date} />
-            {(departTime || arriveTime) && (
-              <SummaryRow k="Время" v={`${departTime || "—"} → ${arriveTime || "—"}`} />
-            )}
-            <SummaryRow k="Маршрут" v={`${from} → ${to}`} />
-            <SummaryRow k="Сумма" v={`${amountNum.toLocaleString("ru-RU")} ₽`} />
-            <SummaryRow k="Прописью" v={amountWords} muted />
-            <SummaryRow k="Оплата" v={payment === "card" ? "Банковская карта" : "Наличные"} />
-            <SummaryRow k="Цель" v={purpose || "—"} />
-            {needsCounterparty && counterparty && <SummaryRow k="Контрагент" v={counterparty} />}
-            {isBusinessTrip && <SummaryRow k="Командировка" v={`${bizStart} — ${bizEnd}`} />}
-
-            <Row label="Комментарий (необязательно)">
-              <textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                rows={3}
-                placeholder="—"
-                className={`${field} resize-none py-3`}
-              />
-            </Row>
-          </StepCard>
+          <DocumentPreview trips={trips} profile={profile} />
         )}
       </div>
 
@@ -256,6 +216,193 @@ function NewNote() {
   );
 }
 
+// ---------- Field blocks ----------
+
+function RouteFields({ trip, update }: { trip: Trip; update: (p: Partial<Trip>) => void }) {
+  const amountNum = parseAmount(trip.amount);
+  const amountWords = amountNum > 0 ? numberToRubles(amountNum) : "";
+  return (
+    <div className="space-y-5">
+      <Row label="Дата поездки">
+        <input type="date" value={trip.date} onChange={(e) => update({ date: e.target.value })} className={`${field} h-[52px]`} />
+      </Row>
+      <div className="grid gap-5 sm:grid-cols-2">
+        <Row label="Время отправления">
+          <input type="time" value={trip.departTime} onChange={(e) => update({ departTime: e.target.value })} className={`${field} h-[52px]`} />
+        </Row>
+        <Row label="Время прибытия">
+          <input type="time" value={trip.arriveTime} onChange={(e) => update({ arriveTime: e.target.value })} className={`${field} h-[52px]`} />
+        </Row>
+      </div>
+      <Row label="Откуда">
+        <input value={trip.from} onChange={(e) => update({ from: e.target.value })} placeholder="Адрес отправления" className={`${field} h-[52px]`} />
+      </Row>
+      <Row label="Куда">
+        <input value={trip.to} onChange={(e) => update({ to: e.target.value })} placeholder="Адрес назначения" className={`${field} h-[52px]`} />
+      </Row>
+      <Row label="Сумма расходов, ₽">
+        <input inputMode="decimal" value={trip.amount} onChange={(e) => update({ amount: e.target.value })} placeholder="0" className={`${field} h-[52px]`} />
+        <p className="mt-2 min-h-[18px] text-[13px] italic text-muted-foreground">{amountWords}</p>
+      </Row>
+      <Row label="Способ оплаты">
+        <div className="flex gap-2">
+          <PaymentPill active={trip.payment === "card"} onClick={() => update({ payment: "card" })}>💳 Банковская карта</PaymentPill>
+          <PaymentPill active={trip.payment === "cash"} onClick={() => update({ payment: "cash" })}>💵 Наличные</PaymentPill>
+        </div>
+      </Row>
+    </div>
+  );
+}
+
+function PurposeFields({ trip, update }: { trip: Trip; update: (p: Partial<Trip>) => void }) {
+  return (
+    <div className="space-y-5">
+      <Row label="Цель поездки">
+        <select
+          value={trip.purpose}
+          onChange={(e) => update({ purpose: e.target.value as TripPurpose })}
+          className={`${field} h-[52px] bg-card`}
+        >
+          <option value="">Выберите цель…</option>
+          {TRIP_PURPOSES.map((p) => (
+            <option key={p} value={p}>{p}</option>
+          ))}
+        </select>
+      </Row>
+
+      {needsCp(trip.purpose) && (
+        <Row label="Компания и ФИО представителя">
+          <input
+            value={trip.counterparty}
+            onChange={(e) => update({ counterparty: e.target.value })}
+            placeholder="ООО «Пример» — Иванов И. И."
+            className={`${field} h-[52px]`}
+          />
+        </Row>
+      )}
+
+      <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3.5">
+        <div>
+          <p className="text-[15px] font-medium">Командировка / Служебная поездка</p>
+          <p className="text-[12px] text-muted-foreground">Укажите даты командировки</p>
+        </div>
+        <Toggle checked={trip.isBusinessTrip} onChange={(v) => update({ isBusinessTrip: v })} />
+      </div>
+
+      {trip.isBusinessTrip && (
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Row label="Дата начала">
+            <input type="date" value={trip.bizStart} onChange={(e) => update({ bizStart: e.target.value })} className={`${field} h-[52px]`} />
+          </Row>
+          <Row label="Дата окончания">
+            <input type="date" value={trip.bizEnd} onChange={(e) => update({ bizEnd: e.target.value })} className={`${field} h-[52px]`} />
+          </Row>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------- Document Preview ----------
+
+const MONTHS_RU = [
+  "января", "февраля", "марта", "апреля", "мая", "июня",
+  "июля", "августа", "сентября", "октября", "ноября", "декабря",
+];
+
+function formatDocDate(iso: string): string {
+  if (!iso) return "«__» __________ 202__г.";
+  const d = new Date(iso);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = MONTHS_RU[d.getMonth()];
+  const year = String(d.getFullYear()).slice(2);
+  return `«${day}» ${month} 20${year}г.`;
+}
+
+function DocumentPreview({ trips, profile }: { trips: Trip[]; profile: Profile | null }) {
+  const dates = trips.map((t) => t.date).filter(Boolean).sort();
+  const minDate = dates[0];
+  const maxDate = dates[dates.length - 1];
+  const today = new Date().toISOString().slice(0, 10);
+  const multiple = trips.length > 1;
+
+  return (
+    <div
+      className="rounded-3xl bg-card p-6 sm:p-10"
+      style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.03)", fontFamily: '"Times New Roman", Georgia, serif' }}
+    >
+      <div className="ml-auto max-w-[60%] text-right text-[11px] leading-snug text-foreground/80">
+        к Положению о порядке использования услуг такси в служебных целях работниками ООО «Ютекс Ру»
+      </div>
+
+      <h2 className="mt-8 text-center text-[20px] font-bold tracking-tight text-foreground">
+        Служебная записка по расходам на такси
+      </h2>
+      <p className="mt-1 text-center text-[14px] text-foreground/80">
+        {multiple ? "(период поездки)" : "(служебная поездка)"}
+      </p>
+
+      {multiple && (
+        <p className="mt-4 text-center text-[14px]">
+          За период с {formatDocDate(minDate)} по {formatDocDate(maxDate)}
+        </p>
+      )}
+
+      <p className="mt-6 text-right text-[14px]">Дата документа: {formatDocDate(today)}</p>
+
+      <div className="mt-6 space-y-1 text-[14px]">
+        <p><strong>ФИО работника:</strong> {profile?.fullName || "—"}</p>
+        <p><strong>Должность:</strong> {profile?.position || "—"}</p>
+      </div>
+
+      <div className="mt-6 space-y-6">
+        {trips.map((t, i) => {
+          const num = parseAmount(t.amount);
+          return (
+            <div key={t.id} className="text-[14px] leading-relaxed">
+              <p className="font-semibold">
+                Поездка {i + 1}. Дата поездки: {formatDocDate(t.date)}
+              </p>
+              <p>
+                Дата и время поездки на такси {formatDocDate(t.date)}{" "}
+                {t.departTime || "__:__"} — {t.arriveTime || "__:__"}
+              </p>
+              <p>
+                Расходы на такси в сумме: {num.toLocaleString("ru-RU")} ₽{" "}
+                <em>({numberToRubles(num) || "—"})</em>
+              </p>
+              <p>
+                Цель поездки: {t.purpose || "—"}
+                {needsCp(t.purpose) && t.counterparty ? ` (${t.counterparty})` : ""}
+              </p>
+              <p>Командировка / Служебная поездка: {t.isBusinessTrip ? "Да" : "Нет"}</p>
+              {t.isBusinessTrip && (
+                <p>
+                  Даты командировки: с {formatDocDate(t.bizStart)} по {formatDocDate(t.bizEnd)}
+                </p>
+              )}
+              <p>Способ оплаты: {t.payment === "card" ? "Банковская карта" : "Наличные"}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-8 space-y-2 text-[14px]">
+        <p><strong>Приложение:</strong> Чек / БСО</p>
+        <p className="pt-4">Подпись работника: _____________ &nbsp;&nbsp; Дата: _____________</p>
+      </div>
+
+      <div className="mt-8 space-y-1 text-[11px] italic leading-snug text-muted-foreground">
+        <p>*Если цель поездки — встреча с клиентом, указывать компанию и ФИО представителя.</p>
+        <p>**Чеки/БСО оформляются в соответствии с законодательством РФ.</p>
+        <p>***Расходы возмещаются при предоставлении правильно оформленного чека/БСО.</p>
+      </div>
+    </div>
+  );
+}
+
+// ---------- UI primitives ----------
+
 function ProgressDots({ step }: { step: 1 | 2 | 3 }) {
   return (
     <div className="mt-6 flex items-center gap-2">
@@ -282,11 +429,31 @@ function ProgressDots({ step }: { step: 1 | 2 | 3 }) {
   );
 }
 
-function StepCard({ title, children }: { title: string; children: React.ReactNode }) {
+function StepCard({
+  title,
+  children,
+  onRemove,
+}: {
+  title: string;
+  children: React.ReactNode;
+  onRemove?: () => void;
+}) {
   return (
-    <div className="rounded-3xl bg-card p-6 sm:p-8" style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}>
-      <p className="mb-5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{title}</p>
-      <div className="space-y-5">{children}</div>
+    <div className="relative rounded-3xl bg-card p-6 sm:p-8" style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.03)" }}>
+      <div className="mb-5 flex items-center justify-between">
+        <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{title}</p>
+        {onRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            aria-label="Удалить поездку"
+          >
+            <X size={18} strokeWidth={1.75} />
+          </button>
+        )}
+      </div>
+      {children}
     </div>
   );
 }
@@ -294,9 +461,7 @@ function StepCard({ title, children }: { title: string; children: React.ReactNod
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[12px] font-medium uppercase tracking-wider text-muted-foreground">
-        {label}
-      </span>
+      <span className="mb-1.5 block text-[12px] font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
       {children}
     </label>
   );
@@ -341,24 +506,8 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
     >
       <span
         className="absolute top-[2px] h-[27px] w-[27px] rounded-full bg-white transition-all"
-        style={{
-          left: checked ? "22px" : "2px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-        }}
+        style={{ left: checked ? "22px" : "2px", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}
       />
     </button>
-  );
-}
-
-function SummaryRow({ k, v, muted }: { k: string; v: string; muted?: boolean }) {
-  return (
-    <div className="flex items-start justify-between gap-4 border-b border-border/60 py-2.5 last:border-0">
-      <span className="text-[13px] text-muted-foreground">{k}</span>
-      <span
-        className={`text-right text-[15px] ${muted ? "italic text-muted-foreground" : "text-foreground"}`}
-      >
-        {v}
-      </span>
-    </div>
   );
 }
