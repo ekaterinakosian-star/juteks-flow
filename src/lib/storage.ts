@@ -109,6 +109,58 @@ export function deleteNote(id: string) {
   localStorage.setItem(NOTES_KEY, JSON.stringify(all));
 }
 
+export function clearNotes() {
+  localStorage.removeItem(NOTES_KEY);
+}
+
+export function updateGroupStatus(groupId: string, status: NoteStatus) {
+  const all = getNotes().map((n) =>
+    n.groupId === groupId ? { ...n, status } : n,
+  );
+  localStorage.setItem(NOTES_KEY, JSON.stringify(all));
+}
+
+export interface NoteGroup {
+  groupId: string;
+  createdAt: string;
+  status: NoteStatus;
+  trips: TaxiNote[];
+  total: number;
+}
+
+export function getNoteGroups(): NoteGroup[] {
+  const all = getNotes();
+  const map = new Map<string, TaxiNote[]>();
+  for (const n of all) {
+    const key = n.groupId || n.id;
+    const arr = map.get(key) || [];
+    arr.push(n);
+    map.set(key, arr);
+  }
+  const groups: NoteGroup[] = [];
+  for (const [groupId, trips] of map) {
+    const sorted = [...trips].sort((a, b) => a.date.localeCompare(b.date));
+    groups.push({
+      groupId,
+      createdAt: sorted[0].createdAt,
+      status: (sorted[0].status as NoteStatus) || "draft",
+      trips: sorted,
+      total: sorted.reduce((s, t) => s + (t.amount || 0), 0),
+    });
+  }
+  return groups.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+/** Last working day of the month for a given ISO date (Mon-Fri). */
+export function lastWorkingDayOfMonth(iso: string): Date {
+  const d = new Date(iso);
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  while (last.getDay() === 0 || last.getDay() === 6) {
+    last.setDate(last.getDate() - 1);
+  }
+  return last;
+}
+
 export interface Settings {
   webhookUrl: string;
 }
