@@ -1,9 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Download, Send, Loader2 } from "lucide-react";
 import { AppGate } from "@/components/AppGate";
 import {
+  getLastName,
   getProfile,
+  getSettings,
   saveNote,
   TRIP_PURPOSES,
   type PaymentMethod,
@@ -11,6 +13,7 @@ import {
   type TripPurpose,
 } from "@/lib/storage";
 import { numberToRubles } from "@/lib/numberToWords";
+import { buildFilename, elementToPdfBlob, printElement } from "@/lib/pdf";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -179,6 +182,10 @@ function NewNote() {
         )}
       </div>
 
+      {step === 3 && (
+        <PdfActions trips={trips} profile={profile} />
+      )}
+
       <div className="mt-8 flex gap-3">
         {step > 1 && (
           <button
@@ -211,6 +218,152 @@ function NewNote() {
             {saved ? "Сохранено" : "Сохранить записку"}
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ---------- PDF Actions ----------
+
+interface TripLike {
+  date: string;
+  departTime: string;
+  arriveTime: string;
+  from: string;
+  to: string;
+  amount: string;
+  payment: PaymentMethod;
+  purpose: TripPurpose | "";
+  counterparty: string;
+  isBusinessTrip: boolean;
+  bizStart: string;
+  bizEnd: string;
+}
+
+function PdfActions({ trips, profile }: { trips: TripLike[]; profile: Profile | null }) {
+  const [sending, setSending] = useState(false);
+  const [banner, setBanner] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const webhookUrl = useMemo(() => getSettings().webhookUrl, []);
+  const lastName = getLastName(profile?.fullName || "");
+  const filename = buildFilename({ lastName, tripDates: trips.map((t) => t.date) });
+  const filenameNoExt = filename.replace(/\.pdf$/i, "");
+
+  const downloadPdf = () => {
+    printElement(filenameNoExt);
+  };
+
+  const sendToOneDrive = async () => {
+    if (!webhookUrl) return;
+    const el = document.getElementById("document-preview");
+    if (!el) return;
+    setSending(true);
+    setBanner(null);
+    try {
+      const blob = await elementToPdfBlob(el);
+      const file = new File([blob], filename, { type: "application/pdf" });
+      const metadata = {
+        fio: profile?.fullName || "",
+        dolzhnost: profile?.position || "",
+        filial: profile?.branch || "",
+        email: profile?.email || "",
+        document_date: new Date().toISOString().slice(0, 10),
+        filename,
+        trips: trips.map((t) => ({
+          date: t.date,
+          depart_time: t.departTime,
+          arrive_time: t.arriveTime,
+          from: t.from,
+          to: t.to,
+          amount: Number(t.amount.replace(/\s/g, "").replace(",", ".")) || 0,
+          payment_method: t.payment,
+          purpose: t.purpose,
+          counterparty: t.counterparty || null,
+          is_business_trip: t.isBusinessTrip,
+          business_trip_start: t.bizStart || null,
+          business_trip_end: t.bizEnd || null,
+        })),
+      };
+      const fd = new FormData();
+      fd.append("file", file, filename);
+      fd.append("metadata", JSON.stringify(metadata));
+      const res = await fetch(webhookUrl, { method: "POST", body: fd });
+      if (!res.ok) throw new Error(String(res.status));
+      setBanner({
+        kind: "ok",
+        text: "Документ отправлен. Проверьте папку OneDrive с вашим ФИО в канале Teams.",
+      });
+    } catch {
+      setBanner({
+        kind: "err",
+        text: "Ошибка отправки. Скачайте PDF вручную и загрузите в Teams.",
+      });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="mt-6 space-y-3">
+      {banner && (
+        <div
+          className="rounded-xl px-4 py-3 text-[14px]"
+          style={{
+            backgroundColor:
+              banner.kind === "ok"
+                ? "color-mix(in oklch, #10b981 12%, white)"
+                : "color-mix(in oklch, var(--color-primary) 12%, white)",
+            color:
+              banner.kind === "ok"
+                ? "#065f46"
+                : "var(--color-primary)",
+            border: `1px solid ${banner.kind === "ok" ? "#10b98155" : "color-mix(in oklch, var(--color-primary) 30%, transparent)"}`,
+          }}
+        >
+          {banner.text}
+        </div>
+      )}
+
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <button
+          type="button"
+          onClick={downloadPdf}
+          className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-[15px] font-medium text-foreground transition active:scale-[0.99]"
+        >
+          <Download size={18} strokeWidth={1.75} />
+          Скачать PDF
+        </button>
+
+        <div className="flex-1">
+          <button
+            type="button"
+            onClick={sendToOneDrive}
+            disabled={!webhookUrl || sending}
+            title={!webhookUrl ? "Настройте webhook в настройках" : undefined}
+            className="flex h-[52px] w-full items-center justify-center gap-2 rounded-xl text-[15px] font-medium text-primary-foreground transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ backgroundColor: "var(--color-primary)" }}
+          >
+            {sending ? (
+              <>
+                <Loader2 size={18} strokeWidth={2} className="animate-spin" />
+                Отправка…
+              </>
+            ) : (
+              <>
+                <Send size={18} strokeWidth={1.75} />
+                Отправить в OneDrive
+              </>
+            )}
+          </button>
+          {!webhookUrl && (
+            <p className="mt-1.5 text-center text-[12px] text-muted-foreground">
+              Настройте webhook в{" "}
+              <Link to="/settings" className="underline">
+                настройках
+              </Link>
+              .
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -328,8 +481,9 @@ function DocumentPreview({ trips, profile }: { trips: Trip[]; profile: Profile |
 
   return (
     <div
+      id="document-preview"
       className="rounded-3xl bg-card p-6 sm:p-10"
-      style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.03)", fontFamily: '"Times New Roman", Georgia, serif' }}
+      style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.03)", fontFamily: 'Arial, "Helvetica Neue", Helvetica, sans-serif' }}
     >
       <div className="ml-auto max-w-[60%] text-right text-[11px] leading-snug text-foreground/80">
         к Положению о порядке использования услуг такси в служебных целях работниками ООО «Ютекс Ру»
