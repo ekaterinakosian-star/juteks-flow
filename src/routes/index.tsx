@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Plus, X, Download, Send, Loader2 } from "lucide-react";
 import { AppGate } from "@/components/AppGate";
 import {
