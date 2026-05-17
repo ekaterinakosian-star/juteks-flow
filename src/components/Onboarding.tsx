@@ -71,7 +71,17 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
               </select>
             </Field>
 
-            <Field label="Филиал / Региональное подразделение">
+            <Field
+              label="Филиал / Региональное подразделение"
+              hint={
+                <span
+                  className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
+                  style={{ backgroundColor: "#FEF3C7", color: "#92400E" }}
+                >
+                  Обновить позже
+                </span>
+              }
+            >
               <select
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
