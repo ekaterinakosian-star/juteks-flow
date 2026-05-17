@@ -481,8 +481,9 @@ function DocumentPreview({ trips, profile }: { trips: Trip[]; profile: Profile |
 
   return (
     <div
+      id="document-preview"
       className="rounded-3xl bg-card p-6 sm:p-10"
-      style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.03)", fontFamily: '"Times New Roman", Georgia, serif' }}
+      style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.03)", fontFamily: 'Arial, "Helvetica Neue", Helvetica, sans-serif' }}
     >
       <div className="ml-auto max-w-[60%] text-right text-[11px] leading-snug text-foreground/80">
         к Положению о порядке использования услуг такси в служебных целях работниками ООО «Ютекс Ру»
