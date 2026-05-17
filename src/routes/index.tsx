@@ -1,12 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Plus, X, Download, Send, Loader2 } from "lucide-react";
 import { AppGate } from "@/components/AppGate";
+import { DocumentPreview, type PreviewTrip } from "@/components/DocumentPreview";
 import {
   getLastName,
   getProfile,
   getSettings,
   saveNote,
+  updateGroupStatus,
   TRIP_PURPOSES,
   type PaymentMethod,
   type Profile,
