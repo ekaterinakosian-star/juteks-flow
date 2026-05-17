@@ -318,7 +318,17 @@ interface TripLike {
   bizEnd: string;
 }
 
-function PdfActions({ trips, profile }: { trips: TripLike[]; profile: Profile | null }) {
+function PdfActions({
+  trips,
+  profile,
+  onSent,
+  onDownloaded,
+}: {
+  trips: TripLike[];
+  profile: Profile | null;
+  onSent?: () => void;
+  onDownloaded?: () => void;
+}) {
   const [sending, setSending] = useState(false);
   const [banner, setBanner] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const webhookUrl = useMemo(() => getSettings().webhookUrl, []);
