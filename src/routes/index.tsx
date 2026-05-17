@@ -381,6 +381,7 @@ function PdfActions({
         kind: "ok",
         text: "Документ отправлен. Проверьте папку OneDrive с вашим ФИО в канале Teams.",
       });
+      onSent?.();
     } catch {
       setBanner({
         kind: "err",
