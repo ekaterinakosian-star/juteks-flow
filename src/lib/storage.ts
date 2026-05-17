@@ -105,6 +105,31 @@ export function deleteNote(id: string) {
   localStorage.setItem(NOTES_KEY, JSON.stringify(all));
 }
 
+export interface Settings {
+  webhookUrl: string;
+}
+
+const SETTINGS_KEY = "juteks.settings";
+
+export function getSettings(): Settings {
+  if (typeof window === "undefined") return { webhookUrl: "" };
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    return raw ? (JSON.parse(raw) as Settings) : { webhookUrl: "" };
+  } catch {
+    return { webhookUrl: "" };
+  }
+}
+
+export function saveSettings(s: Settings) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+}
+
+export function getLastName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  return parts[0] || "Сотрудник";
+}
+
 export function getInitials(fullName: string): string {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "—";

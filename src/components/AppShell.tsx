@@ -1,5 +1,5 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { Pencil, ClipboardList } from "lucide-react";
+import { Pencil, ClipboardList, Settings as SettingsIcon } from "lucide-react";
 import { Logo } from "./Logo";
 import { getInitials, type Profile } from "@/lib/storage";
 
@@ -26,12 +26,21 @@ export function AppShell({
       >
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-3.5">
           <Logo />
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-card text-[12px] font-medium text-foreground"
-            style={{ boxShadow: "inset 0 0 0 1px var(--color-border)" }}
-            title={profile.fullName}
-          >
-            {getInitials(profile.fullName)}
+          <div className="flex items-center gap-2">
+            <Link
+              to="/settings"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              aria-label="Настройки"
+            >
+              <SettingsIcon size={18} strokeWidth={1.75} />
+            </Link>
+            <div
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-card text-[12px] font-medium text-foreground"
+              style={{ boxShadow: "inset 0 0 0 1px var(--color-border)" }}
+              title={profile.fullName}
+            >
+              {getInitials(profile.fullName)}
+            </div>
           </div>
         </div>
       </header>
