@@ -25,6 +25,23 @@ export const POSITIONS: Position[] = [
 
 export const BRANCHES = ["Добавить позже — TODO"];
 
+export type PaymentMethod = "card" | "cash";
+
+export type TripPurpose =
+  | "Поездка в офис / на производство"
+  | "Аэропорт / ж.д. вокзал"
+  | "Встреча с клиентом"
+  | "Поездка к контрагенту"
+  | "Иное (согласовано с руководителем)";
+
+export const TRIP_PURPOSES: TripPurpose[] = [
+  "Поездка в офис / на производство",
+  "Аэропорт / ж.д. вокзал",
+  "Встреча с клиентом",
+  "Поездка к контрагенту",
+  "Иное (согласовано с руководителем)",
+];
+
 export interface Profile {
   fullName: string;
   position: Position;
@@ -35,10 +52,17 @@ export interface Profile {
 export interface TaxiNote {
   id: string;
   date: string;
+  departTime?: string;
+  arriveTime?: string;
   from: string;
   to: string;
   purpose: string;
   amount: number;
+  paymentMethod?: PaymentMethod;
+  counterparty?: string;
+  isBusinessTrip?: boolean;
+  businessTripStart?: string;
+  businessTripEnd?: string;
   comment?: string;
   createdAt: string;
 }
