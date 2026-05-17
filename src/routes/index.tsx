@@ -8,7 +8,6 @@ import {
   getProfile,
   getSettings,
   saveNote,
-  updateGroupStatus,
   TRIP_PURPOSES,
   type PaymentMethod,
   type Profile,
