@@ -338,6 +338,7 @@ function PdfActions({
 
   const downloadPdf = () => {
     printElement(filenameNoExt);
+    onDownloaded?.();
   };
 
   const sendToOneDrive = async () => {
