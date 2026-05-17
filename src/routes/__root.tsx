@@ -76,10 +76,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "Платформа учёта расходов на такси сотрудников ООО «Ютекс Ру» (Beaulieu International Group)." },
       { name: "author", content: "JUTEKS" },
       { property: "og:title", content: "JUTEKS — учёт расходов на такси" },
-      { property: "og:description", content: "Корпоративный учёт поездок на такси для сотрудников Juteks." },
+      { property: "og:description", content: "Платформа учёта расходов на такси сотрудников ООО «Ютекс Ру» (Beaulieu International Group)." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "JUTEKS — учёт расходов на такси" },
+      { name: "twitter:description", content: "Платформа учёта расходов на такси сотрудников ООО «Ютекс Ру» (Beaulieu International Group)." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/307c60bf-0e63-44e4-8501-f8c88d38f2a7/id-preview-6e5c999a--871cd8ca-a3be-4229-aa20-ae9e810b26e5.lovable.app-1779020750040.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/307c60bf-0e63-44e4-8501-f8c88d38f2a7/id-preview-6e5c999a--871cd8ca-a3be-4229-aa20-ae9e810b26e5.lovable.app-1779020750040.png" },
     ],
     links: [
       {
