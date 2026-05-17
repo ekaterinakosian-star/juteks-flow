@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Plus, X, Download, Send, Loader2 } from "lucide-react";
 import { AppGate } from "@/components/AppGate";
+import { DocumentPreview, type PreviewTrip } from "@/components/DocumentPreview";
 import {
   getLastName,
   getProfile,
@@ -96,6 +97,7 @@ function NewNote() {
   const [saved, setSaved] = useState(false);
 
   const profile = useMemo(() => getProfile(), []);
+  const groupIdRef = useRef<string>(crypto.randomUUID());
 
   const update = (id: string, patch: Partial<Trip>) =>
     setTrips((arr) => arr.map((t) => (t.id === id ? { ...t, ...patch } : t)));
@@ -107,12 +109,30 @@ function NewNote() {
   const step2Valid =
     isPurposeValid(trips[0]) && trips.slice(1).every((t) => isTripFullyValid(t));
 
-  const submit = () => {
-    if (!step1Valid || !step2Valid) return;
+  const previewTrips: PreviewTrip[] = trips.map((t) => ({
+    id: t.id,
+    date: t.date,
+    departTime: t.departTime,
+    arriveTime: t.arriveTime,
+    from: t.from,
+    to: t.to,
+    amount: parseAmount(t.amount),
+    payment: t.payment,
+    purpose: t.purpose || "",
+    counterparty: t.counterparty,
+    isBusinessTrip: t.isBusinessTrip,
+    bizStart: t.bizStart,
+    bizEnd: t.bizEnd,
+  }));
+
+  const persistTrips = (status: "draft" | "sent" | "downloaded") => {
     const createdAt = new Date().toISOString();
+    const groupId = groupIdRef.current;
     trips.forEach((t) => {
       saveNote({
         id: crypto.randomUUID(),
+        groupId,
+        status,
         date: t.date,
         departTime: t.departTime || undefined,
         arriveTime: t.arriveTime || undefined,
@@ -129,9 +149,18 @@ function NewNote() {
         createdAt,
       });
     });
-    setSaved(true);
-    setTimeout(() => navigate({ to: "/history" }), 500);
   };
+
+  const submit = () => {
+    if (!step1Valid || !step2Valid) return;
+    persistTrips("draft");
+    setSaved(true);
+    setTimeout(() => navigate({ to: "/history" }), 1100);
+  };
+
+  if (saved) {
+    return <SuccessSplash />;
+  }
 
   return (
     <div>
@@ -154,36 +183,59 @@ function NewNote() {
             </StepCard>
 
             {trips.slice(1).map((t, i) => (
-              <StepCard
-                key={t.id}
-                title={`Поездка ${i + 2}`}
-                onRemove={() => removeTrip(t.id)}
-              >
-                <RouteFields trip={t} update={(p) => update(t.id, p)} />
-                <div className="my-2 h-px bg-border/60" />
-                <PurposeFields trip={t} update={(p) => update(t.id, p)} />
-              </StepCard>
+              <div key={t.id} className="animate-fade-up">
+                <StepCard
+                  title={`Поездка ${i + 2}`}
+                  onRemove={() => removeTrip(t.id)}
+                >
+                  <RouteFields trip={t} update={(p) => update(t.id, p)} />
+                  <div className="my-2 h-px bg-border/60" />
+                  <PurposeFields trip={t} update={(p) => update(t.id, p)} />
+                </StepCard>
+              </div>
             ))}
 
-            <button
-              type="button"
-              onClick={addTrip}
-              className="flex h-[56px] w-full items-center justify-center gap-2 rounded-2xl border border-dashed bg-card text-[15px] font-medium transition active:scale-[0.995]"
-              style={{ color: "var(--color-primary)", borderColor: "color-mix(in oklch, var(--color-primary) 50%, transparent)" }}
+            <div
+              className="sticky z-20"
+              style={{ bottom: "calc(env(safe-area-inset-bottom) + 80px)" }}
             >
-              <Plus size={18} strokeWidth={2} />
-              Добавить поездку
-            </button>
+              <button
+                type="button"
+                onClick={addTrip}
+                className="flex h-[56px] w-full items-center justify-center gap-2 rounded-2xl border border-dashed text-[15px] font-medium backdrop-blur-xl transition active:scale-[0.995]"
+                style={{
+                  color: "var(--color-primary)",
+                  borderColor:
+                    "color-mix(in oklch, var(--color-primary) 50%, transparent)",
+                  backgroundColor:
+                    "color-mix(in oklch, var(--color-card) 85%, transparent)",
+                }}
+              >
+                <Plus size={18} strokeWidth={2} />
+                Добавить поездку
+              </button>
+            </div>
           </>
         )}
 
         {step === 3 && (
-          <DocumentPreview trips={trips} profile={profile} />
+          <DocumentPreview trips={previewTrips} profile={profile} />
         )}
       </div>
 
       {step === 3 && (
-        <PdfActions trips={trips} profile={profile} />
+        <PdfActions
+          trips={trips}
+          profile={profile}
+          onSent={() => {
+            persistTrips("sent");
+            setSaved(true);
+            setTimeout(() => navigate({ to: "/history" }), 1100);
+          }}
+          onDownloaded={() => {
+            persistTrips("downloaded");
+          }}
+        />
       )}
 
       <div className="mt-8 flex gap-3">
@@ -191,7 +243,7 @@ function NewNote() {
           <button
             type="button"
             onClick={() => setStep((s) => (s === 3 ? 2 : 1))}
-            className="h-[56px] flex-1 rounded-xl border border-border bg-card text-[16px] font-medium text-foreground transition active:scale-[0.99]"
+            className="min-h-[52px] h-[56px] flex-1 rounded-xl border border-border bg-card text-[16px] font-medium text-foreground transition active:scale-[0.99]"
           >
             Назад
           </button>
@@ -201,7 +253,7 @@ function NewNote() {
             type="button"
             disabled={step === 1 ? !step1Valid : !step2Valid}
             onClick={() => setStep((s) => ((s + 1) as 1 | 2 | 3))}
-            className="h-[56px] flex-1 rounded-xl text-[16px] font-medium text-primary-foreground transition active:scale-[0.99] disabled:opacity-40"
+            className="min-h-[52px] h-[56px] flex-1 rounded-xl text-[16px] font-medium text-primary-foreground transition active:scale-[0.99] disabled:opacity-40"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
             Далее
@@ -212,13 +264,38 @@ function NewNote() {
             type="button"
             disabled={saved || !step1Valid || !step2Valid}
             onClick={submit}
-            className="h-[56px] flex-1 rounded-xl text-[16px] font-medium text-primary-foreground transition active:scale-[0.99] disabled:opacity-60"
+            className="min-h-[52px] h-[56px] flex-1 rounded-xl text-[16px] font-medium text-primary-foreground transition active:scale-[0.99] disabled:opacity-60"
             style={{ backgroundColor: "var(--color-primary)" }}
           >
-            {saved ? "Сохранено" : "Сохранить записку"}
+            Сохранить записку
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+function SuccessSplash() {
+  return (
+    <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
+      <div
+        className="success-check-circle flex h-24 w-24 items-center justify-center rounded-full"
+        style={{ backgroundColor: "#10b981" }}
+      >
+        <svg viewBox="0 0 52 52" className="h-14 w-14">
+          <path
+            className="success-check-path"
+            fill="none"
+            stroke="white"
+            strokeWidth="5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M14 27 L23 36 L40 18"
+          />
+        </svg>
+      </div>
+      <h2 className="mt-6 text-[24px] font-medium tracking-tight">Записка сохранена</h2>
+      <p className="mt-1.5 text-[15px] text-muted-foreground">Открываем историю…</p>
     </div>
   );
 }
@@ -240,7 +317,17 @@ interface TripLike {
   bizEnd: string;
 }
 
-function PdfActions({ trips, profile }: { trips: TripLike[]; profile: Profile | null }) {
+function PdfActions({
+  trips,
+  profile,
+  onSent,
+  onDownloaded,
+}: {
+  trips: TripLike[];
+  profile: Profile | null;
+  onSent?: () => void;
+  onDownloaded?: () => void;
+}) {
   const [sending, setSending] = useState(false);
   const [banner, setBanner] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const webhookUrl = useMemo(() => getSettings().webhookUrl, []);
@@ -250,6 +337,7 @@ function PdfActions({ trips, profile }: { trips: TripLike[]; profile: Profile | 
 
   const downloadPdf = () => {
     printElement(filenameNoExt);
+    onDownloaded?.();
   };
 
   const sendToOneDrive = async () => {
@@ -292,6 +380,7 @@ function PdfActions({ trips, profile }: { trips: TripLike[]; profile: Profile | 
         kind: "ok",
         text: "Документ отправлен. Проверьте папку OneDrive с вашим ФИО в канале Teams.",
       });
+      onSent?.();
     } catch {
       setBanner({
         kind: "err",
@@ -456,104 +545,7 @@ function PurposeFields({ trip, update }: { trip: Trip; update: (p: Partial<Trip>
   );
 }
 
-// ---------- Document Preview ----------
-
-const MONTHS_RU = [
-  "января", "февраля", "марта", "апреля", "мая", "июня",
-  "июля", "августа", "сентября", "октября", "ноября", "декабря",
-];
-
-function formatDocDate(iso: string): string {
-  if (!iso) return "«__» __________ 202__г.";
-  const d = new Date(iso);
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = MONTHS_RU[d.getMonth()];
-  const year = String(d.getFullYear()).slice(2);
-  return `«${day}» ${month} 20${year}г.`;
-}
-
-function DocumentPreview({ trips, profile }: { trips: Trip[]; profile: Profile | null }) {
-  const dates = trips.map((t) => t.date).filter(Boolean).sort();
-  const minDate = dates[0];
-  const maxDate = dates[dates.length - 1];
-  const today = new Date().toISOString().slice(0, 10);
-  const multiple = trips.length > 1;
-
-  return (
-    <div
-      id="document-preview"
-      className="rounded-3xl bg-card p-6 sm:p-10"
-      style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.03)", fontFamily: 'Arial, "Helvetica Neue", Helvetica, sans-serif' }}
-    >
-      <div className="ml-auto max-w-[60%] text-right text-[11px] leading-snug text-foreground/80">
-        к Положению о порядке использования услуг такси в служебных целях работниками ООО «Ютекс Ру»
-      </div>
-
-      <h2 className="mt-8 text-center text-[20px] font-bold tracking-tight text-foreground">
-        Служебная записка по расходам на такси
-      </h2>
-      <p className="mt-1 text-center text-[14px] text-foreground/80">
-        {multiple ? "(период поездки)" : "(служебная поездка)"}
-      </p>
-
-      {multiple && (
-        <p className="mt-4 text-center text-[14px]">
-          За период с {formatDocDate(minDate)} по {formatDocDate(maxDate)}
-        </p>
-      )}
-
-      <p className="mt-6 text-right text-[14px]">Дата документа: {formatDocDate(today)}</p>
-
-      <div className="mt-6 space-y-1 text-[14px]">
-        <p><strong>ФИО работника:</strong> {profile?.fullName || "—"}</p>
-        <p><strong>Должность:</strong> {profile?.position || "—"}</p>
-      </div>
-
-      <div className="mt-6 space-y-6">
-        {trips.map((t, i) => {
-          const num = parseAmount(t.amount);
-          return (
-            <div key={t.id} className="text-[14px] leading-relaxed">
-              <p className="font-semibold">
-                Поездка {i + 1}. Дата поездки: {formatDocDate(t.date)}
-              </p>
-              <p>
-                Дата и время поездки на такси {formatDocDate(t.date)}{" "}
-                {t.departTime || "__:__"} — {t.arriveTime || "__:__"}
-              </p>
-              <p>
-                Расходы на такси в сумме: {num.toLocaleString("ru-RU")} ₽{" "}
-                <em>({numberToRubles(num) || "—"})</em>
-              </p>
-              <p>
-                Цель поездки: {t.purpose || "—"}
-                {needsCp(t.purpose) && t.counterparty ? ` (${t.counterparty})` : ""}
-              </p>
-              <p>Командировка / Служебная поездка: {t.isBusinessTrip ? "Да" : "Нет"}</p>
-              {t.isBusinessTrip && (
-                <p>
-                  Даты командировки: с {formatDocDate(t.bizStart)} по {formatDocDate(t.bizEnd)}
-                </p>
-              )}
-              <p>Способ оплаты: {t.payment === "card" ? "Банковская карта" : "Наличные"}</p>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="mt-8 space-y-2 text-[14px]">
-        <p><strong>Приложение:</strong> Чек / БСО</p>
-        <p className="pt-4">Подпись работника: _____________ &nbsp;&nbsp; Дата: _____________</p>
-      </div>
-
-      <div className="mt-8 space-y-1 text-[11px] italic leading-snug text-muted-foreground">
-        <p>*Если цель поездки — встреча с клиентом, указывать компанию и ФИО представителя.</p>
-        <p>**Чеки/БСО оформляются в соответствии с законодательством РФ.</p>
-        <p>***Расходы возмещаются при предоставлении правильно оформленного чека/БСО.</p>
-      </div>
-    </div>
-  );
-}
+// (DocumentPreview moved to src/components/DocumentPreview.tsx)
 
 // ---------- UI primitives ----------
 

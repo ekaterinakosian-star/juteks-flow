@@ -71,7 +71,17 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
               </select>
             </Field>
 
-            <Field label="Филиал / Региональное подразделение">
+            <Field
+              label="Филиал / Региональное подразделение"
+              hint={
+                <span
+                  className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
+                  style={{ backgroundColor: "#FEF3C7", color: "#92400E" }}
+                >
+                  Обновить позже
+                </span>
+              }
+            >
               <select
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
@@ -121,11 +131,20 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[12px] font-medium uppercase tracking-wider text-muted-foreground">
-        {label}
+      <span className="mb-1.5 flex items-center gap-2 text-[12px] font-medium uppercase tracking-wider text-muted-foreground">
+        <span>{label}</span>
+        {hint}
       </span>
       {children}
     </label>
