@@ -1,17 +1,18 @@
 import { useState } from "react";
-import { POSITIONS, BRANCHES, saveProfile, type Position } from "@/lib/storage";
+import { POSITIONS, BRANCH_GROUPS, saveProfile, type Position } from "@/lib/storage";
 import { Logo } from "./Logo";
 
 export function Onboarding({ onDone }: { onDone: () => void }) {
   const [fullName, setFullName] = useState("");
   const [position, setPosition] = useState<Position>(POSITIONS[0]);
-  const [branch, setBranch] = useState(BRANCHES[0]);
+  const [branch, setBranch] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) return setError("Укажите ФИО");
+    if (!branch) return setError("Выберите филиал / подразделение");
     if (!email.trim()) return setError("Укажите корпоративный email");
     if (!email.endsWith("@ifloor.pro"))
       return setError("Email должен быть в домене @ifloor.pro");
@@ -71,20 +72,11 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
               </select>
             </Field>
 
-            <Field
-              label="Филиал / Региональное подразделение"
-              hint={
-                <span
-                  className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
-                  style={{ backgroundColor: "#FEF3C7", color: "#92400E" }}
-                >
-                  Обновить позже
-                </span>
-              }
-            >
+            <Field label="Филиал / Региональное подразделение">
               <select
                 value={branch}
                 onChange={(e) => setBranch(e.target.value)}
+                required
                 className={`${fieldClass} h-[52px] appearance-none pr-10`}
                 style={{
                   backgroundImage:
@@ -93,10 +85,17 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
                   backgroundPosition: "right 1rem center",
                 }}
               >
-                {BRANCHES.map((b) => (
-                  <option key={b} value={b}>
-                    {b}
-                  </option>
+                <option value="" disabled>
+                  Выберите подразделение
+                </option>
+                {BRANCH_GROUPS.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.options.map((b) => (
+                      <option key={b} value={b}>
+                        {b}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </Field>
@@ -119,7 +118,8 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
 
             <button
               type="submit"
-              className="mt-2 h-[52px] w-full rounded-xl text-[15px] font-medium text-primary-foreground transition active:scale-[0.99]"
+              disabled={!fullName.trim() || !branch || !email.trim()}
+              className="mt-2 h-[52px] w-full rounded-xl text-[15px] font-medium text-primary-foreground transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
               style={{ backgroundColor: "var(--color-primary)" }}
             >
               Сохранить и начать
