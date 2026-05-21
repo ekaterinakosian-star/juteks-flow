@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { POSITIONS, BRANCHES, saveProfile, type Position } from "@/lib/storage";
+import { POSITIONS, BRANCH_GROUPS, saveProfile, type Position } from "@/lib/storage";
 import { Logo } from "./Logo";
 
 export function Onboarding({ onDone }: { onDone: () => void }) {
   const [fullName, setFullName] = useState("");
   const [position, setPosition] = useState<Position>(POSITIONS[0]);
-  const [branch, setBranch] = useState(BRANCHES[0]);
+  const [branch, setBranch] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
 
