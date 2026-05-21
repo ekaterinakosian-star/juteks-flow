@@ -12,6 +12,7 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!fullName.trim()) return setError("Укажите ФИО");
+    if (!branch) return setError("Выберите филиал / подразделение");
     if (!email.trim()) return setError("Укажите корпоративный email");
     if (!email.endsWith("@ifloor.pro"))
       return setError("Email должен быть в домене @ifloor.pro");
