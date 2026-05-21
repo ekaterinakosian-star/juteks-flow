@@ -84,11 +84,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:description", content: "Платформа учёта расходов на такси сотрудников ООО «Ютекс Ру» (Beaulieu International Group)." },
       { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/307c60bf-0e63-44e4-8501-f8c88d38f2a7/id-preview-6e5c999a--871cd8ca-a3be-4229-aa20-ae9e810b26e5.lovable.app-1779020750040.png" },
       { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/307c60bf-0e63-44e4-8501-f8c88d38f2a7/id-preview-6e5c999a--871cd8ca-a3be-4229-aa20-ae9e810b26e5.lovable.app-1779020750040.png" },
+      { name: "theme-color", content: "#C8402A" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
+      },
+      {
+        rel: "icon",
+        type: "image/svg+xml",
+        href: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23C8402A'/%3E%3Ctext x='16' y='23' font-family='Georgia%2C serif' font-size='22' font-weight='700' fill='%23FFFFFF' text-anchor='middle'%3EJ%3C/text%3E%3C/svg%3E",
+      },
+      {
+        rel: "apple-touch-icon",
+        href: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23C8402A'/%3E%3Ctext x='16' y='23' font-family='Georgia%2C serif' font-size='22' font-weight='700' fill='%23FFFFFF' text-anchor='middle'%3EJ%3C/text%3E%3C/svg%3E",
       },
     ],
   }),
