@@ -118,7 +118,8 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
 
             <button
               type="submit"
-              className="mt-2 h-[52px] w-full rounded-xl text-[15px] font-medium text-primary-foreground transition active:scale-[0.99]"
+              disabled={!fullName.trim() || !branch || !email.trim()}
+              className="mt-2 h-[52px] w-full rounded-xl text-[15px] font-medium text-primary-foreground transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
               style={{ backgroundColor: "var(--color-primary)" }}
             >
               Сохранить и начать
