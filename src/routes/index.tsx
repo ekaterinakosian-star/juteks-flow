@@ -422,36 +422,23 @@ function PdfActions({
           Скачать PDF
         </button>
 
-        <div className="flex-1">
+        <div className="group relative flex-1">
           <button
             type="button"
-            onClick={sendToOneDrive}
-            disabled={!webhookUrl || sending}
-            title={!webhookUrl ? "Настройте webhook в настройках" : undefined}
-            className="flex h-[52px] w-full items-center justify-center gap-2 rounded-xl text-[15px] font-medium text-primary-foreground transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
-            style={{ backgroundColor: "var(--color-primary)" }}
+            disabled
+            aria-disabled="true"
+            title="Функция в разработке"
+            className="flex h-[52px] w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-border bg-muted text-[15px] font-medium text-muted-foreground"
           >
-            {sending ? (
-              <>
-                <Loader2 size={18} strokeWidth={2} className="animate-spin" />
-                Отправка…
-              </>
-            ) : (
-              <>
-                <Send size={18} strokeWidth={1.75} />
-                Отправить в OneDrive
-              </>
-            )}
+            <Send size={18} strokeWidth={1.75} />
+            Отправить в OneDrive
           </button>
-          {!webhookUrl && (
-            <p className="mt-1.5 text-center text-[12px] text-muted-foreground">
-              Настройте webhook в{" "}
-              <Link to="/settings" className="underline">
-                настройках
-              </Link>
-              .
-            </p>
-          )}
+          <div
+            role="tooltip"
+            className="pointer-events-none absolute left-1/2 -top-2 z-30 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-foreground px-3 py-1.5 text-[12px] font-medium text-background opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-active:opacity-100"
+          >
+            Функция в разработке
+          </div>
         </div>
       </div>
     </div>
