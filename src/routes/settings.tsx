@@ -33,7 +33,7 @@ function SettingsView() {
   return (
     <div>
       <button
-        onClick={() => nav({ to: "/" })}
+        onClick={() => nav("/")}
         className="mb-4 inline-flex items-center gap-1 text-[14px] text-muted-foreground transition hover:text-foreground"
       >
         <ArrowLeft size={16} /> Назад

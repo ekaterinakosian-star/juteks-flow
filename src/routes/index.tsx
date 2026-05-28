@@ -1,5 +1,5 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, X, Download, Send, Loader2 } from "lucide-react";
 import { AppGate } from "@/components/AppGate";
 import { DocumentPreview, type PreviewTrip } from "@/components/DocumentPreview";
@@ -16,17 +16,10 @@ import {
 import { numberToRubles } from "@/lib/numberToWords";
 import { buildFilename, elementToPdfBlob, printElement } from "@/lib/pdf";
 
-export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Новая записка — JUTEKS такси" },
-      { name: "description", content: "Учёт расходов на такси сотрудников ООО «Ютекс Ру»." },
-    ],
-  }),
-  component: IndexPage,
-});
-
-function IndexPage() {
+export default function IndexPage() {
+  useEffect(() => {
+    document.title = "Новая записка — JUTEKS такси";
+  }, []);
   return (
     <AppGate>
       <NewNote />
