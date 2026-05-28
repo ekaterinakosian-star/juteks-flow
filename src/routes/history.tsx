@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { Download, Trash2, FolderOpen } from "lucide-react";
 import { AppGate } from "@/components/AppGate";
@@ -22,20 +22,10 @@ import {
   elementToPdfBlob,
 } from "@/lib/pdf";
 
-export const Route = createFileRoute("/history")({
-  head: () => ({
-    meta: [
-      { title: "История поездок — JUTEKS такси" },
-      {
-        name: "description",
-        content: "История корпоративных поездок на такси.",
-      },
-    ],
-  }),
-  component: HistoryPage,
-});
-
-function HistoryPage() {
+export default function HistoryPage() {
+  useEffect(() => {
+    document.title = "История поездок — JUTEKS такси";
+  }, []);
   return (
     <AppGate>
       <History />

@@ -1,17 +1,13 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { AppGate } from "@/components/AppGate";
 import { getSettings, saveSettings } from "@/lib/storage";
 
-export const Route = createFileRoute("/settings")({
-  head: () => ({
-    meta: [{ title: "Настройки — JUTEKS такси" }],
-  }),
-  component: SettingsPage,
-});
-
-function SettingsPage() {
+export default function SettingsPage() {
+  useEffect(() => {
+    document.title = "Настройки — JUTEKS такси";
+  }, []);
   return (
     <AppGate>
       <SettingsView />

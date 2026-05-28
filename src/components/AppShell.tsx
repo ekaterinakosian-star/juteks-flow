@@ -1,4 +1,4 @@
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation } from "react-router-dom";
 import { Pencil, ClipboardList, Settings as SettingsIcon } from "lucide-react";
 import { Logo } from "./Logo";
 import { getInitials, type Profile } from "@/lib/storage";
