@@ -148,7 +148,7 @@ function NewNote() {
     if (!step1Valid || !step2Valid) return;
     persistTrips("draft");
     setSaved(true);
-    setTimeout(() => navigate({ to: "/history" }), 1100);
+    setTimeout(() => navigate("/history"), 1100);
   };
 
   if (saved) {
@@ -223,7 +223,7 @@ function NewNote() {
           onSent={() => {
             persistTrips("sent");
             setSaved(true);
-            setTimeout(() => navigate({ to: "/history" }), 1100);
+            setTimeout(() => navigate("/history"), 1100);
           }}
           onDownloaded={() => {
             persistTrips("downloaded");
