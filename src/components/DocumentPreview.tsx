@@ -1,5 +1,5 @@
 import { numberToRubles } from "@/lib/numberToWords";
-import type { PaymentMethod, Profile } from "@/lib/storage";
+import { getCompanyByBranch, type PaymentMethod, type Profile } from "@/lib/storage";
 
 const MONTHS_RU = [
   "января", "февраля", "марта", "апреля", "мая", "июня",
