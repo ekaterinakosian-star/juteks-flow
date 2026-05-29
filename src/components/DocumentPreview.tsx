@@ -50,6 +50,7 @@ export function DocumentPreview({
   const maxDate = dates[dates.length - 1];
   const docDate = documentDate || new Date().toISOString().slice(0, 10);
   const multiple = trips.length > 1;
+  const company = getCompanyByBranch(profile?.branch || "");
 
   return (
     <div
