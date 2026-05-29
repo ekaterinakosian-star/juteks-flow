@@ -86,6 +86,7 @@ export function DocumentPreview({
       <div className="mt-6 space-y-1 text-[14px]">
         <p><strong>ФИО работника:</strong> {profile?.fullName || "—"}</p>
         <p><strong>Должность:</strong> {profile?.position || "—"}</p>
+        <p><strong>Организация работника:</strong> {company || "—"}</p>
       </div>
 
       <div className="mt-6 space-y-6">
