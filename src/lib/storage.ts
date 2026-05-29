@@ -208,6 +208,12 @@ export function getLastName(fullName: string): string {
   return parts[0] || "Сотрудник";
 }
 
+export function getCompanyByBranch(branch: string): string {
+  if (!branch) return "";
+  const group = BRANCH_GROUPS.find((g) => g.options.includes(branch));
+  return group?.label || "";
+}
+
 export function getInitials(fullName: string): string {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "—";
