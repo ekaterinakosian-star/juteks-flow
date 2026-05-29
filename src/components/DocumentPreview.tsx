@@ -68,6 +68,9 @@ export function DocumentPreview({
       <h2 className="mt-8 text-center text-[20px] font-bold tracking-tight text-foreground">
         Служебная записка по расходам на такси
       </h2>
+      {company && (
+        <p className="mt-1 text-center text-[14px] font-medium text-foreground">{company}</p>
+      )}
       <p className="mt-1 text-center text-[14px] text-foreground/80">
         {multiple ? "(период поездки)" : "(служебная поездка)"}
       </p>
