@@ -62,7 +62,7 @@ export function DocumentPreview({
       }}
     >
       <div className="ml-auto max-w-[60%] text-right text-[11px] leading-snug text-foreground/80">
-        к Положению о порядке использования услуг такси в служебных целях работниками ООО «Ютекс Ру»
+        к Положению о порядке использования услуг такси в служебных целях работниками {company || "ООО «Ютекс Ру»"}
       </div>
 
       <h2 className="mt-8 text-center text-[20px] font-bold tracking-tight text-foreground">
