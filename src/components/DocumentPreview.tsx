@@ -1,5 +1,5 @@
 import { numberToRubles } from "@/lib/numberToWords";
-import type { PaymentMethod, Profile } from "@/lib/storage";
+import { getCompanyByBranch, type PaymentMethod, type Profile } from "@/lib/storage";
 
 const MONTHS_RU = [
   "января", "февраля", "марта", "апреля", "мая", "июня",
@@ -50,6 +50,7 @@ export function DocumentPreview({
   const maxDate = dates[dates.length - 1];
   const docDate = documentDate || new Date().toISOString().slice(0, 10);
   const multiple = trips.length > 1;
+  const company = getCompanyByBranch(profile?.branch || "");
 
   return (
     <div
@@ -67,6 +68,9 @@ export function DocumentPreview({
       <h2 className="mt-8 text-center text-[20px] font-bold tracking-tight text-foreground">
         Служебная записка по расходам на такси
       </h2>
+      {company && (
+        <p className="mt-1 text-center text-[14px] font-medium text-foreground">{company}</p>
+      )}
       <p className="mt-1 text-center text-[14px] text-foreground/80">
         {multiple ? "(период поездки)" : "(служебная поездка)"}
       </p>
@@ -82,6 +86,7 @@ export function DocumentPreview({
       <div className="mt-6 space-y-1 text-[14px]">
         <p><strong>ФИО работника:</strong> {profile?.fullName || "—"}</p>
         <p><strong>Должность:</strong> {profile?.position || "—"}</p>
+        <p><strong>Организация работника:</strong> {company || "—"}</p>
       </div>
 
       <div className="mt-6 space-y-6">
