@@ -27,6 +27,15 @@ export function AppShell({
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-3.5">
           <Logo />
           <div className="flex items-center gap-2">
+            <a
+              href="https://putlist.ifloor-taxi.ru"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-9 items-center justify-center rounded-full px-3 text-[12px] font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+              title="Путевые листы"
+            >
+              Путевые листы
+            </a>
             <Link
               to="/settings"
               className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
