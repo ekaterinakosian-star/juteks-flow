@@ -221,7 +221,9 @@ function NewNote() {
       {step === 3 && (
         <PdfActions
           trips={trips}
+          previewTrips={previewTrips}
           profile={profile}
+
           onSent={() => {
             persistTrips("sent");
             setSaved(true);
