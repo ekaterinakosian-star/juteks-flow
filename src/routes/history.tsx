@@ -247,12 +247,15 @@ function History() {
 function GroupCard({
   group,
   onReDownload,
+  onDownloadWord,
   reDownloading,
 }: {
   group: NoteGroup;
   onReDownload: () => void;
+  onDownloadWord: () => void;
   reDownloading: boolean;
 }) {
+
   const first = group.trips[0];
   const multi = group.trips.length > 1;
   const docDate = group.createdAt.slice(0, 10);
