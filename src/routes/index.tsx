@@ -433,11 +433,26 @@ function PdfActions({
         <button
           type="button"
           onClick={downloadPdf}
+          disabled={downloading}
+          className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-[15px] font-medium text-foreground transition active:scale-[0.99] disabled:opacity-60"
+        >
+          {downloading ? (
+            <Loader2 size={18} strokeWidth={1.75} className="animate-spin" />
+          ) : (
+            <Download size={18} strokeWidth={1.75} />
+          )}
+          {downloading ? "Готовим PDF…" : "Скачать PDF"}
+        </button>
+
+        <button
+          type="button"
+          onClick={downloadWord}
           className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-[15px] font-medium text-foreground transition active:scale-[0.99]"
         >
-          <Download size={18} strokeWidth={1.75} />
-          Скачать PDF
+          <FileText size={18} strokeWidth={1.75} />
+          Скачать Word
         </button>
+
 
         <div className="group relative flex-1">
           <button
