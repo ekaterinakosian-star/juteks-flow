@@ -316,16 +316,26 @@ function GroupCard({
         </div>
       </div>
 
-      <button
-        onClick={onReDownload}
-        disabled={reDownloading}
-        className="mt-4 flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-card text-[14px] font-medium text-foreground transition active:scale-[0.99] disabled:opacity-60"
-      >
-        <Download size={16} strokeWidth={1.75} />
-        {reDownloading ? "Готовим PDF…" : "Скачать PDF повторно"}
-      </button>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <button
+          onClick={onReDownload}
+          disabled={reDownloading}
+          className="flex w-full min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-[14px] font-medium text-foreground transition active:scale-[0.99] disabled:opacity-60"
+        >
+          <Download size={16} strokeWidth={1.75} />
+          {reDownloading ? "Готовим PDF…" : "Скачать PDF повторно"}
+        </button>
+        <button
+          onClick={onDownloadWord}
+          className="flex w-full min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-[14px] font-medium text-foreground transition active:scale-[0.99]"
+        >
+          <FileText size={16} strokeWidth={1.75} />
+          Скачать Word
+        </button>
+      </div>
     </div>
   );
+
 }
 
 function StatusPill({ status }: { status: NoteGroup["status"] }) {
