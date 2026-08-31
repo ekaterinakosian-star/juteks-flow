@@ -158,8 +158,10 @@ function History() {
                 <GroupCard
                   group={g}
                   onReDownload={() => handleReDownload(g)}
+                  onDownloadWord={() => handleDownloadWord(g)}
                   reDownloading={reDownloading?.groupId === g.groupId}
                 />
+
               </li>
             ))}
           </ul>
