@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import { Download, Trash2, FolderOpen } from "lucide-react";
+import { Download, Trash2, FolderOpen, FileText } from "lucide-react";
 import { AppGate } from "@/components/AppGate";
 import {
   DocumentPreview,
@@ -21,6 +21,8 @@ import {
   downloadBlob,
   elementToPdfBlob,
 } from "@/lib/pdf";
+import { noteToWordBlob } from "@/lib/word";
+
 
 export default function HistoryPage() {
   useEffect(() => {
@@ -109,6 +111,20 @@ function History() {
     }
   };
 
+  const handleDownloadWord = (g: NoteGroup) => {
+    const blob = noteToWordBlob(
+      g.trips.map(tripToPreview),
+      profile,
+      g.createdAt.slice(0, 10),
+    );
+    const filename = buildFilename({
+      lastName: getLastName(profile?.fullName || ""),
+      tripDates: g.trips.map((t) => t.date),
+    }).replace(/\.pdf$/i, ".doc");
+    downloadBlob(blob, filename);
+  };
+
+
   return (
     <div>
       <h1 className="text-[34px] font-medium leading-tight tracking-tight">
@@ -158,8 +174,10 @@ function History() {
                 <GroupCard
                   group={g}
                   onReDownload={() => handleReDownload(g)}
+                  onDownloadWord={() => handleDownloadWord(g)}
                   reDownloading={reDownloading?.groupId === g.groupId}
                 />
+
               </li>
             ))}
           </ul>
@@ -231,12 +249,15 @@ function History() {
 function GroupCard({
   group,
   onReDownload,
+  onDownloadWord,
   reDownloading,
 }: {
   group: NoteGroup;
   onReDownload: () => void;
+  onDownloadWord: () => void;
   reDownloading: boolean;
 }) {
+
   const first = group.trips[0];
   const multi = group.trips.length > 1;
   const docDate = group.createdAt.slice(0, 10);
@@ -297,16 +318,26 @@ function GroupCard({
         </div>
       </div>
 
-      <button
-        onClick={onReDownload}
-        disabled={reDownloading}
-        className="mt-4 flex w-full min-h-[44px] items-center justify-center gap-2 rounded-xl border border-border bg-card text-[14px] font-medium text-foreground transition active:scale-[0.99] disabled:opacity-60"
-      >
-        <Download size={16} strokeWidth={1.75} />
-        {reDownloading ? "Готовим PDF…" : "Скачать PDF повторно"}
-      </button>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <button
+          onClick={onReDownload}
+          disabled={reDownloading}
+          className="flex w-full min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-[14px] font-medium text-foreground transition active:scale-[0.99] disabled:opacity-60"
+        >
+          <Download size={16} strokeWidth={1.75} />
+          {reDownloading ? "Готовим PDF…" : "Скачать PDF повторно"}
+        </button>
+        <button
+          onClick={onDownloadWord}
+          className="flex w-full min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-[14px] font-medium text-foreground transition active:scale-[0.99]"
+        >
+          <FileText size={16} strokeWidth={1.75} />
+          Скачать Word
+        </button>
+      </div>
     </div>
   );
+
 }
 
 function StatusPill({ status }: { status: NoteGroup["status"] }) {

@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, X, Download, Send, Loader2 } from "lucide-react";
+import { Plus, X, Download, Send, Loader2, FileText } from "lucide-react";
 import { AppGate } from "@/components/AppGate";
 import { DocumentPreview, type PreviewTrip } from "@/components/DocumentPreview";
 import {
@@ -14,7 +14,9 @@ import {
   type TripPurpose,
 } from "@/lib/storage";
 import { numberToRubles } from "@/lib/numberToWords";
-import { buildFilename, elementToPdfBlob, printElement } from "@/lib/pdf";
+import { buildFilename, downloadBlob, elementToPdfBlob, printElement } from "@/lib/pdf";
+import { noteToWordBlob } from "@/lib/word";
+
 
 export default function IndexPage() {
   useEffect(() => {
@@ -219,7 +221,9 @@ function NewNote() {
       {step === 3 && (
         <PdfActions
           trips={trips}
+          previewTrips={previewTrips}
           profile={profile}
+
           onSent={() => {
             persistTrips("sent");
             setSaved(true);
@@ -312,26 +316,50 @@ interface TripLike {
 
 function PdfActions({
   trips,
+  previewTrips,
   profile,
   onSent,
   onDownloaded,
 }: {
   trips: TripLike[];
+  previewTrips: PreviewTrip[];
   profile: Profile | null;
   onSent?: () => void;
   onDownloaded?: () => void;
 }) {
   const [sending, setSending] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [banner, setBanner] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const webhookUrl = useMemo(() => getSettings().webhookUrl, []);
   const lastName = getLastName(profile?.fullName || "");
   const filename = buildFilename({ lastName, tripDates: trips.map((t) => t.date) });
   const filenameNoExt = filename.replace(/\.pdf$/i, "");
 
-  const downloadPdf = () => {
-    printElement(filenameNoExt);
+  const downloadPdf = async () => {
+    const el = document.getElementById("document-preview");
+    if (!el) {
+      printElement(filenameNoExt);
+      return;
+    }
+    setDownloading(true);
+    setBanner(null);
+    try {
+      const blob = await elementToPdfBlob(el);
+      downloadBlob(blob, filename);
+      onDownloaded?.();
+    } catch {
+      setBanner({ kind: "err", text: "Не удалось сформировать PDF. Попробуйте ещё раз." });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const downloadWord = () => {
+    const blob = noteToWordBlob(previewTrips, profile);
+    downloadBlob(blob, `${filenameNoExt}.doc`);
     onDownloaded?.();
   };
+
 
   const sendToOneDrive = async () => {
     if (!webhookUrl) return;
@@ -409,11 +437,26 @@ function PdfActions({
         <button
           type="button"
           onClick={downloadPdf}
+          disabled={downloading}
+          className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-[15px] font-medium text-foreground transition active:scale-[0.99] disabled:opacity-60"
+        >
+          {downloading ? (
+            <Loader2 size={18} strokeWidth={1.75} className="animate-spin" />
+          ) : (
+            <Download size={18} strokeWidth={1.75} />
+          )}
+          {downloading ? "Готовим PDF…" : "Скачать PDF"}
+        </button>
+
+        <button
+          type="button"
+          onClick={downloadWord}
           className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-xl border border-border bg-card text-[15px] font-medium text-foreground transition active:scale-[0.99]"
         >
-          <Download size={18} strokeWidth={1.75} />
-          Скачать PDF
+          <FileText size={18} strokeWidth={1.75} />
+          Скачать Word
         </button>
+
 
         <div className="group relative flex-1">
           <button
