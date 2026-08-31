@@ -21,6 +21,8 @@ import {
   downloadBlob,
   elementToPdfBlob,
 } from "@/lib/pdf";
+import { noteToWordBlob } from "@/lib/word";
+
 
 export default function HistoryPage() {
   useEffect(() => {
