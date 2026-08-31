@@ -109,6 +109,20 @@ function History() {
     }
   };
 
+  const handleDownloadWord = (g: NoteGroup) => {
+    const blob = noteToWordBlob(
+      g.trips.map(tripToPreview),
+      profile,
+      g.createdAt.slice(0, 10),
+    );
+    const filename = buildFilename({
+      lastName: getLastName(profile?.fullName || ""),
+      tripDates: g.trips.map((t) => t.date),
+    }).replace(/\.pdf$/i, ".doc");
+    downloadBlob(blob, filename);
+  };
+
+
   return (
     <div>
       <h1 className="text-[34px] font-medium leading-tight tracking-tight">
