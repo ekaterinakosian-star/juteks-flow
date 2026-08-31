@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import { Download, Trash2, FolderOpen } from "lucide-react";
+import { Download, Trash2, FolderOpen, FileText } from "lucide-react";
 import { AppGate } from "@/components/AppGate";
 import {
   DocumentPreview,
