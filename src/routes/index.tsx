@@ -312,26 +312,50 @@ interface TripLike {
 
 function PdfActions({
   trips,
+  previewTrips,
   profile,
   onSent,
   onDownloaded,
 }: {
   trips: TripLike[];
+  previewTrips: PreviewTrip[];
   profile: Profile | null;
   onSent?: () => void;
   onDownloaded?: () => void;
 }) {
   const [sending, setSending] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [banner, setBanner] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const webhookUrl = useMemo(() => getSettings().webhookUrl, []);
   const lastName = getLastName(profile?.fullName || "");
   const filename = buildFilename({ lastName, tripDates: trips.map((t) => t.date) });
   const filenameNoExt = filename.replace(/\.pdf$/i, "");
 
-  const downloadPdf = () => {
-    printElement(filenameNoExt);
+  const downloadPdf = async () => {
+    const el = document.getElementById("document-preview");
+    if (!el) {
+      printElement(filenameNoExt);
+      return;
+    }
+    setDownloading(true);
+    setBanner(null);
+    try {
+      const blob = await elementToPdfBlob(el);
+      downloadBlob(blob, filename);
+      onDownloaded?.();
+    } catch {
+      setBanner({ kind: "err", text: "Не удалось сформировать PDF. Попробуйте ещё раз." });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const downloadWord = () => {
+    const blob = noteToWordBlob(previewTrips, profile);
+    downloadBlob(blob, `${filenameNoExt}.doc`);
     onDownloaded?.();
   };
+
 
   const sendToOneDrive = async () => {
     if (!webhookUrl) return;
