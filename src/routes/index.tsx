@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, X, Download, Send, Loader2 } from "lucide-react";
+import { Plus, X, Download, Send, Loader2, FileText } from "lucide-react";
 import { AppGate } from "@/components/AppGate";
 import { DocumentPreview, type PreviewTrip } from "@/components/DocumentPreview";
 import {
@@ -14,7 +14,9 @@ import {
   type TripPurpose,
 } from "@/lib/storage";
 import { numberToRubles } from "@/lib/numberToWords";
-import { buildFilename, elementToPdfBlob, printElement } from "@/lib/pdf";
+import { buildFilename, downloadBlob, elementToPdfBlob, printElement } from "@/lib/pdf";
+import { noteToWordBlob } from "@/lib/word";
+
 
 export default function IndexPage() {
   useEffect(() => {
